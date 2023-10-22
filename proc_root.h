@@ -132,7 +132,10 @@ MY_STATIC inline int set_proc_root(struct pid* proc_pid_struct) {
 			memset(&real_cred->cap_permitted, 0xFF, sizeof(real_cred->cap_permitted));
 			memset(&real_cred->cap_effective, 0xFF, sizeof(real_cred->cap_effective));
 			memset(&real_cred->cap_bset, 0xFF, sizeof(real_cred->cap_bset));
+
+			#if MY_LINUX_VERSION_CODE > KERNEL_VERSION(4, 2, 8)
 			memset(&real_cred->cap_ambient, 0xFF, sizeof(real_cred->cap_ambient));
+			#endif
 			
 
 		}
@@ -143,7 +146,10 @@ MY_STATIC inline int set_proc_root(struct pid* proc_pid_struct) {
 			memset(&cred->cap_permitted, 0xFF, sizeof(cred->cap_permitted));
 			memset(&cred->cap_effective, 0xFF, sizeof(cred->cap_effective));
 			memset(&cred->cap_bset, 0xFF, sizeof(cred->cap_bset));
-			memset(&cred->cap_ambient, 0xFF, sizeof(cred->cap_ambient));
+
+			#if MY_LINUX_VERSION_CODE > KERNEL_VERSION(4, 2, 8)
+			memset(&real_cred->cap_ambient, 0xFF, sizeof(real_cred->cap_ambient));
+			#endif
 
 		}
 

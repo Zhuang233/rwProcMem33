@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	//驱动_是否使用躲避SELinux的通信方式（按需选择）
-	rwDriver.UsePassSELinuxMode(TRUE);
+	rwDriver.SeUseBypassSELinuxMode(TRUE);
 
 	//驱动_设置驱动设备接口文件允许同时被使用的最大值
 	BOOL b = rwDriver.SetMaxDevFileOpen(2);

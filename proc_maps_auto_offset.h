@@ -29,7 +29,8 @@ MY_STATIC int init_mmap_lock_offset(int proc_self_maps_cnt) {
 	struct task_struct * mytask = NULL;
 	struct mm_struct * mm = NULL;
 
-	mytask = x_get_current();
+	// mytask = x_get_current();
+	mytask = current;
 	if (mytask == NULL) {
 		return -EFAULT;
 	}
@@ -128,7 +129,8 @@ MY_STATIC int init_map_count_offset(int proc_self_maps_cnt) {
 	struct task_struct * mytask = NULL;
 	struct mm_struct * mm = NULL;
 
-	mytask = x_get_current();
+	// mytask = x_get_current();
+	mytask = current;
 	if (mytask == NULL) {
 		return -EFAULT;
 	}
@@ -176,7 +178,10 @@ MY_STATIC int init_vm_file_offset(void) {
 	int is_find_vm_file_offset = 0;
 	struct mm_struct *mm;
 	struct vm_area_struct *vma;
-	struct task_struct * mytask = x_get_current();
+	
+	// struct task_struct * mytask = x_get_current();
+	struct task_struct * mytask = current;
+	
 
 	if (mytask == NULL) {
 		return -EFAULT;

@@ -148,7 +148,8 @@ MY_STATIC inline size_t get_task_proc_phy_addr(struct task_struct* task, size_t 
 	struct mm_struct *mm;
 	//////////////////////////////////////////////////////////////////////////
 	pgd_t *pgd;
-	p4d_t *p4d;
+	// 没有中间这几层
+	// p4d_t *p4d;
 	pud_t *pud;
 	pmd_t *pmd;
 	pte_t *pte;
@@ -181,20 +182,20 @@ MY_STATIC inline size_t get_task_proc_phy_addr(struct task_struct* task, size_t 
 	}
 	printk_debug("pgd_offset ok\n");
 
-	/*
-	 * (p4ds are folded into pgds so this doesn't get actually called,
-	 * but the define is needed for a generic inline function.)
-	 */
-	p4d = p4d_offset(pgd, virt_addr);
-	//printk_debug("p4d_val = 0x%lx, p4d_index = %lu\n", p4d_val(*p4d), p4d_index(virt_addr));
-	printk_debug("p4d_val = 0x%lx\n", p4d_val(*p4d));
-	if (p4d_none(*p4d))
-	{
-		printk_debug("not mapped in p4d\n");
-		goto out;
-	}
+	// /*
+	//  * (p4ds are folded into pgds so this doesn't get actually called,
+	//  * but the define is needed for a generic inline function.)
+	//  */
+	// p4d = p4d_offset(pgd, virt_addr);
+	// //printk_debug("p4d_val = 0x%lx, p4d_index = %lu\n", p4d_val(*p4d), p4d_index(virt_addr));
+	// printk_debug("p4d_val = 0x%lx\n", p4d_val(*p4d));
+	// if (p4d_none(*p4d))
+	// {
+	// 	printk_debug("not mapped in p4d\n");
+	// 	goto out;
+	// }
 
-	pud = pud_offset(p4d, virt_addr);
+	pud = pud_offset(pgd, virt_addr);
 	printk_debug("pud_val = 0x%llx \n", pud_val(*pud));
 	if (pud_none(*pud)) {
 		printk_debug("not mapped in pud\n");
@@ -347,8 +348,8 @@ MY_STATIC inline size_t read_ram_physical_addr(size_t phy_addr, char* lpBuf, boo
 			printk_debug(KERN_INFO "Error in x_xlate_dev_mem_ptr:0x%llx\n", phy_addr);
 			break;
 		}
-		probe = x_probe_kernel_read(bounce, ptr, sz);
-		unxlate_dev_mem_ptr(phy_addr, ptr);
+		probe = probe_kernel_read(bounce, ptr, sz);
+		// unxlate_dev_mem_ptr(phy_addr, ptr);
 		if (probe) {
 			break;
 		}
@@ -397,13 +398,13 @@ MY_STATIC inline size_t write_ram_physical_addr(size_t phy_addr, char* lpBuf, bo
 		} else {
 			unsigned long copied = x_copy_from_user(ptr, lpBuf, sz);
 			if (copied) {
-				unxlate_dev_mem_ptr(phy_addr, ptr);
+				// unxlate_dev_mem_ptr(phy_addr, ptr);
 				realWrite += sz - copied;
 				printk_debug(KERN_INFO "Error in x_copy_from_user\n");
 				break;
 			}
 		}
-		unxlate_dev_mem_ptr(phy_addr, ptr);
+		// unxlate_dev_mem_ptr(phy_addr, ptr);
 
 		lpBuf += sz;
 		phy_addr += sz;

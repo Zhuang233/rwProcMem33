@@ -20,7 +20,8 @@ MY_STATIC inline int init_proc_cmdline_offset(const char* proc_self_cmdline_cont
 	char *new_cmd_line_buf = NULL;
 	struct task_struct * mytask = NULL;
 
-	mytask = x_get_current();
+	// mytask = x_get_current();
+	mytask = current;
 	if (mytask == NULL) {
 		return -EFAULT;
 	}
