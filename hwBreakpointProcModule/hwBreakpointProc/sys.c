@@ -17,8 +17,8 @@
 #include <linux/hw_breakpoint.h>
 #include <linux/ksm.h>
 ///////////////////////////////////////////////////////////////////
-#include <linux/slab.h> //kmallocÓëkfree
-#include <linux/device.h> //device_create´´½¨Éè±¸ÎÄ¼ş£¨/dev/xxxxxxxx£©
+#include <linux/slab.h> //kmallocä¸kfree
+#include <linux/device.h> //device_createåˆ›å»ºè®¾å¤‡æ–‡ä»¶ï¼ˆ/dev/xxxxxxxxï¼‰
 //////////////////////////////////////////////////////////////////
 #include "cvector.h"
 #include "proc.h"
@@ -27,44 +27,44 @@
 //////////////////////////////////////////////////////////////////
 
 #define MAJOR_NUM 100
-#define IOCTL_OPEN_PROCESS 							_IOR(MAJOR_NUM, 1, char*) //´ò¿ª½ø³Ì
-#define IOCTL_CLOSE_HANDLE 							_IOR(MAJOR_NUM, 2, char*) //¹Ø±Õ½ø³Ì
-#define IOCTL_GET_NUM_BRPS 							_IOR(MAJOR_NUM, 3, char*) //»ñÈ¡CPUÖ§³ÖÓ²¼şÖ´ĞĞ¶ÏµãµÄÊıÁ¿
-#define IOCTL_GET_NUM_WRPS 							_IOR(MAJOR_NUM, 4, char*) //»ñÈ¡CPUÖ§³ÖÓ²¼ş·ÃÎÊ¶ÏµãµÄÊıÁ¿
-#define IOCTL_SET_HWBP_HIT_CONDITIONS		_IOR(MAJOR_NUM, 5, char*) //ÉèÖÃÓ²¼ş¶ÏµãÃüÖĞ¼ÇÂ¼Ìõ¼ş
-#define IOCTL_ADD_PROCESS_HWBP					_IOR(MAJOR_NUM, 6, char*) //ÉèÖÃ½ø³ÌÓ²¼ş¶Ïµã
-#define IOCTL_DEL_PROCESS_HWBP					_IOR(MAJOR_NUM, 7, char*) //É¾³ı½ø³ÌÓ²¼ş¶Ïµã
-#define IOCTL_GET_HWBP_HIT_ADDR_COUNT	_IOR(MAJOR_NUM, 8, char*) //»ñÈ¡Ó²¼ş¶ÏµãÃüÖĞµØÖ·ÊıÁ¿
+#define IOCTL_OPEN_PROCESS 							_IOR(MAJOR_NUM, 1, char*) //æ‰“å¼€è¿›ç¨‹
+#define IOCTL_CLOSE_HANDLE 							_IOR(MAJOR_NUM, 2, char*) //å…³é—­è¿›ç¨‹
+#define IOCTL_GET_NUM_BRPS 							_IOR(MAJOR_NUM, 3, char*) //è·å–CPUæ”¯æŒç¡¬ä»¶æ‰§è¡Œæ–­ç‚¹çš„æ•°é‡
+#define IOCTL_GET_NUM_WRPS 							_IOR(MAJOR_NUM, 4, char*) //è·å–CPUæ”¯æŒç¡¬ä»¶è®¿é—®æ–­ç‚¹çš„æ•°é‡
+#define IOCTL_SET_HWBP_HIT_CONDITIONS		_IOR(MAJOR_NUM, 5, char*) //è®¾ç½®ç¡¬ä»¶æ–­ç‚¹å‘½ä¸­è®°å½•æ¡ä»¶
+#define IOCTL_ADD_PROCESS_HWBP					_IOR(MAJOR_NUM, 6, char*) //è®¾ç½®è¿›ç¨‹ç¡¬ä»¶æ–­ç‚¹
+#define IOCTL_DEL_PROCESS_HWBP					_IOR(MAJOR_NUM, 7, char*) //åˆ é™¤è¿›ç¨‹ç¡¬ä»¶æ–­ç‚¹
+#define IOCTL_GET_HWBP_HIT_ADDR_COUNT	_IOR(MAJOR_NUM, 8, char*) //è·å–ç¡¬ä»¶æ–­ç‚¹å‘½ä¸­åœ°å€æ•°é‡
 
 //////////////////////////////////////////////////////////////////
-static int g_hwBreakpointProc_major = 0; //¼ÇÂ¼¶¯Ì¬ÉêÇëµÄÖ÷Éè±¸ºÅ
+static int g_hwBreakpointProc_major = 0; //è®°å½•åŠ¨æ€ç”³è¯·çš„ä¸»è®¾å¤‡å·
 static dev_t g_hwBreakpointProc_devno;
 
-//hwBreakpointProcDevÉè±¸½á¹¹Ìå
+//hwBreakpointProcDevè®¾å¤‡ç»“æ„ä½“
 static struct hwBreakpointProcDev {
-	struct cdev cdev; //cdev½á¹¹Ìå
+	struct cdev cdev; //cdevç»“æ„ä½“
 };
-static struct hwBreakpointProcDev *g_hwBreakpointProc_devp; //´´½¨µÄcdevÉè±¸½á¹¹
-static struct class *g_Class_devp; //´´½¨µÄÉè±¸Àà
+static struct hwBreakpointProcDev *g_hwBreakpointProc_devp; //åˆ›å»ºçš„cdevè®¾å¤‡ç»“æ„
+static struct class *g_Class_devp; //åˆ›å»ºçš„è®¾å¤‡ç±»
 
 
 
 
-//È«¾Ö´¢´æÓ²¼ş¶Ïµã¾ä±úÊı×é
+//å…¨å±€å‚¨å­˜ç¡¬ä»¶æ–­ç‚¹å¥æŸ„ï¼ˆperf_event *ï¼‰æ•°ç»„
 static cvector g_vHwBpHandle;
 
 
 static struct HIT_INFO {
-	size_t hit_addr; //ÃüÖĞµØÖ·
-	size_t hit_count; //ÃüÖĞ´ÎÊı
-	struct pt_regs regs; //×îºóÒ»´ÎÃüÖĞµÄ¼Ä´æÆ÷Êı¾İ
+	size_t hit_addr; //å‘½ä¸­åœ°å€
+	size_t hit_count; //å‘½ä¸­æ¬¡æ•°
+	struct pt_regs regs; //æœ€åä¸€æ¬¡å‘½ä¸­çš„å¯„å­˜å™¨æ•°æ®
 
 };
 static struct HW_BREAKPOINT_INFO {
-	struct perf_event * sample_hbp; //Ó²¶Ï¾ä±ú
-	cvector vHit; //ÃüÖĞĞÅÏ¢Êı×é
+	struct perf_event * sample_hbp; //ç¡¬æ–­å¥æŸ„
+	cvector vHit; //å‘½ä¸­ä¿¡æ¯æ•°ç»„
 };
-//È«¾Ö´¢´æÓ²¼ş¶ÏµãÃüÖĞĞÅÏ¢Êı×é
+//å…¨å±€å‚¨å­˜ç¡¬ä»¶æ–­ç‚¹å‘½ä¸­ä¿¡æ¯æ•°ç»„
 static cvector g_vHwBpInfo;
 static struct semaphore g_lockHwBpInfoSem;
 
@@ -87,12 +87,12 @@ static struct HIT_CONDITIONS {
 	uint64_t syscallno;
 };
 #pragma pack()
-//È«¾ÖÓ²¼ş¶ÏµãÃüÖĞ¼ÇÂ¼Ìõ¼ş
+//å…¨å±€ç¡¬ä»¶æ–­ç‚¹å‘½ä¸­è®°å½•æ¡ä»¶
 static struct HIT_CONDITIONS g_hwBpHitConditions = { 0 };
 
 
 static int hwBreakpointProc_open(struct inode *inode, struct file *filp) {
-	//½«Éè±¸½á¹¹ÌåÖ¸Õë¸³Öµ¸øÎÄ¼şË½ÓĞÊı¾İÖ¸Õë
+	//å°†è®¾å¤‡ç»“æ„ä½“æŒ‡é’ˆèµ‹å€¼ç»™æ–‡ä»¶ç§æœ‰æ•°æ®æŒ‡é’ˆ
 	filp->private_data = g_hwBreakpointProc_devp;
 	return 0;
 }
@@ -108,24 +108,24 @@ static ssize_t hwBreakpointProc_read(struct file* filp, char __user* buf, size_t
 		uint64_t syscallno;
 	};
 	struct USER_HIT_INFO {
-		size_t hit_addr; //ÃüÖĞµØÖ·
-		size_t hit_count; //ÃüÖĞ´ÎÊı
-		struct my_user_pt_regs regs; //×îºóÒ»´ÎÃüÖĞµÄ¼Ä´æÆ÷Êı¾İ
+		size_t hit_addr; //å‘½ä¸­åœ°å€
+		size_t hit_count; //å‘½ä¸­æ¬¡æ•°
+		struct my_user_pt_regs regs; //æœ€åä¸€æ¬¡å‘½ä¸­çš„å¯„å­˜å™¨æ•°æ®
 	};
 #pragma pack()
 	/*
-	Çı¶¯Í¨ĞÅĞ­Òé£º
+	é©±åŠ¨é€šä¿¡åè®®ï¼š
 
-		ÊäÈë£º
-		0-7×Ö½Ú£ºÓ²¼ş¶Ïµã¾ä±ú
+		è¾“å…¥ï¼š
+		0-7å­—èŠ‚ï¼šç¡¬ä»¶æ–­ç‚¹å¥æŸ„
 
-		Êä³ö£º
+		è¾“å‡ºï¼š
 		sizeof(USER_HIT_INFO) * n
 	*/
 
-	//struct hwBreakpointProcDev* devp = filp->private_data; //»ñµÃÉè±¸½á¹¹ÌåÖ¸Õë
+	//struct hwBreakpointProcDev* devp = filp->private_data; //è·å¾—è®¾å¤‡ç»“æ„ä½“æŒ‡é’ˆ
 
-	//»ñÈ¡Ó²¼ş¶Ïµã¾ä±ú
+	//è·å–ç¡¬ä»¶æ–­ç‚¹å¥æŸ„
 	char tem[8];
 	struct perf_event * sample_hbp = NULL;
 	ssize_t count = 0;
@@ -135,11 +135,11 @@ static ssize_t hwBreakpointProc_read(struct file* filp, char __user* buf, size_t
 	citerator iter;
 
 	memset(&tem, 0, sizeof(tem));
-	//ÓÃ»§¿Õ¼ä->ÄÚºË¿Õ¼ä
+	//ç”¨æˆ·ç©ºé—´->å†…æ ¸ç©ºé—´
 	if (copy_from_user(tem, buf, 8)) {
 		return -EFAULT;
 	}
-	//»ñÈ¡Ó²¼ş¶Ïµã¾ä±ú
+	//è·å–ç¡¬ä»¶æ–­ç‚¹å¥æŸ„
 	memcpy(&sample_hbp, tem, sizeof(sample_hbp));
 	printk_debug(KERN_INFO "sample_hbp *:%ld\n", sample_hbp);
 
@@ -172,7 +172,7 @@ static ssize_t hwBreakpointProc_read(struct file* filp, char __user* buf, size_t
 				userHitInfo.regs.orig_x0 = hitInfo->regs.orig_x0;
 				userHitInfo.regs.syscallno = hitInfo->regs.syscallno;
 
-				//ÄÚºË¿Õ¼ä->ÓÃ»§¿Õ¼ä½»»»Êı¾İ
+				//å†…æ ¸ç©ºé—´->ç”¨æˆ·ç©ºé—´äº¤æ¢æ•°æ®
 				if (copy_to_user((void*)copy_pos, &userHitInfo, sizeof(userHitInfo))) {
 					break;
 				}
@@ -201,25 +201,25 @@ static ssize_t hwBreakpointProc_write(struct file* filp, const char __user* buf,
 }
 
 static loff_t hwBreakpointProc_llseek(struct file* filp, loff_t offset, int orig) {
-	loff_t ret = 0; //·µ»ØµÄÎ»ÖÃÆ«ÒÆ
+	loff_t ret = 0; //è¿”å›çš„ä½ç½®åç§»
 
 	switch (orig) {
-	case SEEK_SET: //Ïà¶ÔÎÄ¼ş¿ªÊ¼Î»ÖÃÆ«ÒÆ
-		if (offset < 0) //offset²»ºÏ·¨
+	case SEEK_SET: //ç›¸å¯¹æ–‡ä»¶å¼€å§‹ä½ç½®åç§»
+		if (offset < 0) //offsetä¸åˆæ³•
 		{
-			ret = -EINVAL; //ÎŞĞ§µÄÖ¸Õë
+			ret = -EINVAL; //æ— æ•ˆçš„æŒ‡é’ˆ
 			break;
 		}
 
-		filp->f_pos = offset; //¸üĞÂÎÄ¼şÖ¸ÕëÎ»ÖÃ
-		ret = filp->f_pos; //·µ»ØµÄÎ»ÖÃÆ«ÒÆ
+		filp->f_pos = offset; //æ›´æ–°æ–‡ä»¶æŒ‡é’ˆä½ç½®
+		ret = filp->f_pos; //è¿”å›çš„ä½ç½®åç§»
 		break;
 
-	case SEEK_CUR: //Ïà¶ÔÎÄ¼şµ±Ç°Î»ÖÃÆ«ÒÆ
+	case SEEK_CUR: //ç›¸å¯¹æ–‡ä»¶å½“å‰ä½ç½®åç§»
 
-		if ((filp->f_pos + offset) < 0) //Ö¸Õë²»ºÏ·¨
+		if ((filp->f_pos + offset) < 0) //æŒ‡é’ˆä¸åˆæ³•
 		{
-			ret = -EINVAL;//ÎŞĞ§µÄÖ¸Õë
+			ret = -EINVAL;//æ— æ•ˆçš„æŒ‡é’ˆ
 			break;
 		}
 
@@ -228,7 +228,7 @@ static loff_t hwBreakpointProc_llseek(struct file* filp, loff_t offset, int orig
 		break;
 
 	default:
-		ret = -EINVAL; //ÎŞĞ§µÄÖ¸Õë
+		ret = -EINVAL; //æ— æ•ˆçš„æŒ‡é’ˆ
 		break;
 	}
 
@@ -249,10 +249,10 @@ static void sample_hbp_handler(struct perf_event *bp,
 	int i = 0;
 
 
-	//ÅĞ¶ÏÊÇ·ñÆôÓÃÁËÌõ¼ş¶Ïµã
+	//åˆ¤æ–­æ˜¯å¦å¯ç”¨äº†æ¡ä»¶æ–­ç‚¹
 	for (i = 0; i < 31; i++) {
 		if (g_hwBpHitConditions.enable_regs[i]) {
-			//ÅĞ¶Ï¼Ä´æÆ÷µÄÖµÊÇ·ñ·ûºÏÌõ¼ş
+			//åˆ¤æ–­å¯„å­˜å™¨çš„å€¼æ˜¯å¦ç¬¦åˆæ¡ä»¶
 			if (regs->regs[i] != g_hwBpHitConditions.regs[i]) {
 				return;
 			}
@@ -285,7 +285,7 @@ static void sample_hbp_handler(struct perf_event *bp,
 	}
 
 
-	//¿ªÊ¼¼ÇÂ¼Ó²¼ş¶ÏµãÃüÖĞÇé¿ö
+	//å¼€å§‹è®°å½•ç¡¬ä»¶æ–­ç‚¹å‘½ä¸­æƒ…å†µ
 	down(&g_lockHwBpInfoSem);
 	for (iter = cvector_begin(g_vHwBpInfo); iter != cvector_end(g_vHwBpInfo); iter = cvector_next(g_vHwBpInfo, iter)) {
 		struct HW_BREAKPOINT_INFO * hwbpInfo = (struct HW_BREAKPOINT_INFO *)iter;
@@ -297,12 +297,15 @@ static void sample_hbp_handler(struct perf_event *bp,
 			//printk_debug(KERN_INFO "hwbpInfo->sample_hbp==bp\n");
 			for (child = cvector_begin(hwbpInfo->vHit); child != cvector_end(hwbpInfo->vHit); child = cvector_next(hwbpInfo->vHit, child)) {
 				struct HIT_INFO * hitInfo = (struct HIT_INFO *)child;
+				// å·²è§¦å‘è¿‡çš„åœ°å€ï¼Œè§¦å‘æ¬¡æ•°++
 				if (hitInfo->hit_addr == now_hit_addr) {
 					exist_hit = 1;
 					hitInfo->hit_count++;
 					break;
 				}
 			}
+
+			// æ·»åŠ å…ˆå‰æœªè§¦å‘è¿‡çš„åœ°å€
 			if (exist_hit == 0) {
 				struct HIT_INFO hitInfo;
 				memset(&hitInfo, 0, sizeof(hitInfo));
@@ -314,6 +317,7 @@ static void sample_hbp_handler(struct perf_event *bp,
 		}
 	}
 
+	// æ·»åŠ å…ˆå‰æœªå‘½ä¸­è¿‡çš„æ–­ç‚¹ä¿¡æ¯
 	if (exist_hbp == 0) {
 		struct HW_BREAKPOINT_INFO hwbpInfo = { 0 };
 		struct HIT_INFO hitInfo = { 0 };
@@ -345,21 +349,21 @@ static long hwBreakpointProc_ioctl(
 	struct inode *inode = inode = filp->f_inode;
 
 
-	struct hwBreakpointProcDev* devp = filp->private_data; //»ñµÃÉè±¸½á¹¹ÌåÖ¸Õë
+	struct hwBreakpointProcDev* devp = filp->private_data; //è·å¾—è®¾å¤‡ç»“æ„ä½“æŒ‡é’ˆ
 
 	switch (cmd) {
-	case IOCTL_OPEN_PROCESS: //´ò¿ª½ø³Ì
+	case IOCTL_OPEN_PROCESS: //æ‰“å¼€è¿›ç¨‹
 	{
 		/*
-		Çı¶¯Í¨ĞÅĞ­Òé£º
+		é©±åŠ¨é€šä¿¡åè®®ï¼š
 
-			ÊäÈë£º
-			0-7×Ö½Ú£º½ø³ÌPID
+			è¾“å…¥ï¼š
+			0-7å­—èŠ‚ï¼šè¿›ç¨‹PID
 
-			Êä³ö£º
-			ioctlµÄ·µ»ØÖµÎª0Ôò±íÊ¾´ò¿ª½ø³Ì³É¹¦
+			è¾“å‡ºï¼š
+			ioctlçš„è¿”å›å€¼ä¸º0åˆ™è¡¨ç¤ºæ‰“å¼€è¿›ç¨‹æˆåŠŸ
 
-			0-7×Ö½Ú£º½ø³Ì¾ä±ú
+			0-7å­—èŠ‚ï¼šè¿›ç¨‹å¥æŸ„
 		*/
 
 		char buf[8];
@@ -368,16 +372,16 @@ static long hwBreakpointProc_ioctl(
 		printk_debug(KERN_INFO "IOCTL_OPEN_PROCESS\n");
 
 		memset(&buf, 0, sizeof(buf));
-		//ÓÃ»§¿Õ¼ä->ÄÚºË¿Õ¼ä
+		//ç”¨æˆ·ç©ºé—´->å†…æ ¸ç©ºé—´
 		if (copy_from_user((void*)buf, (void*)arg, 8)) {
 			return -EINVAL;
 		}
-		//»ñÈ¡½ø³ÌPID
+		//è·å–è¿›ç¨‹PID
 		memcpy(&pid, buf, sizeof(pid));
 		printk_debug(KERN_INFO "pid:%ld\n", pid);
 
 
-		//Êä³ö½ø³Ì¾ä±ú
+		//è¾“å‡ºè¿›ç¨‹å¥æŸ„
 		proc_pid_struct = get_proc_pid_struct(pid);
 		printk_debug(KERN_INFO "proc_pid_struct *:%ld\n", proc_pid_struct);
 
@@ -389,7 +393,7 @@ static long hwBreakpointProc_ioctl(
 		memcpy(&buf, &proc_pid_struct, sizeof(proc_pid_struct));
 
 
-		//ÄÚºË¿Õ¼ä->ÓÃ»§¿Õ¼ä½»»»Êı¾İ
+		//å†…æ ¸ç©ºé—´->ç”¨æˆ·ç©ºé—´äº¤æ¢æ•°æ®
 		if (copy_to_user((void*)arg, &buf, 8)) {
 			return -EINVAL;
 		}
@@ -397,30 +401,30 @@ static long hwBreakpointProc_ioctl(
 		return 0;
 		break;
 	}
-	case IOCTL_CLOSE_HANDLE: //¹Ø±Õ½ø³Ì
+	case IOCTL_CLOSE_HANDLE: //å…³é—­è¿›ç¨‹ï¼Œå‡å°‘å¼•ç”¨è®¡æ•°
 	{
 		/*
-		Çı¶¯Í¨ĞÅĞ­Òé£º
+		é©±åŠ¨é€šä¿¡åè®®ï¼š
 
-			ÊäÈë£º
-			0-7×Ö½Ú£º½ø³Ì¾ä±ú
+			è¾“å…¥ï¼š
+			0-7å­—èŠ‚ï¼šè¿›ç¨‹å¥æŸ„
 
-			Êä³ö£º
-			ioctlµÄ·µ»ØÖµÎª0Ôò±íÊ¾¹Ø±Õ½ø³Ì³É¹¦
+			è¾“å‡ºï¼š
+			ioctlçš„è¿”å›å€¼ä¸º0åˆ™è¡¨ç¤ºå…³é—­è¿›ç¨‹æˆåŠŸ
 		*/
 
-		//»ñÈ¡½ø³Ì¾ä±ú
+		//è·å–è¿›ç¨‹å¥æŸ„
 		char buf[8];
 		struct pid * proc_pid_struct = NULL;
 
 		printk_debug(KERN_INFO "IOCTL_CLOSE_HANDLE\n");
 
 		memset(&buf, 0, sizeof(buf));
-		//ÓÃ»§¿Õ¼ä->ÄÚºË¿Õ¼ä
+		//ç”¨æˆ·ç©ºé—´->å†…æ ¸ç©ºé—´
 		if (copy_from_user((void*)buf, (void*)arg, 8)) {
 			return -EFAULT;
 		}
-		//¹Ø±Õ½ø³Ì¾ä±ú
+		//å…³é—­è¿›ç¨‹å¥æŸ„
 		memcpy(&proc_pid_struct, buf, sizeof(proc_pid_struct));
 		printk_debug(KERN_INFO "proc_pid_struct *:%ld\n", proc_pid_struct);
 		release_proc_pid_struct(proc_pid_struct);
@@ -428,13 +432,13 @@ static long hwBreakpointProc_ioctl(
 		return 0;
 		break;
 	}
-	case IOCTL_GET_NUM_BRPS: //»ñÈ¡CPUÖ§³ÖÓ²¼şÖ´ĞĞ¶ÏµãµÄÊıÁ¿
+	case IOCTL_GET_NUM_BRPS: //è·å–CPUæ”¯æŒç¡¬ä»¶æ‰§è¡Œæ–­ç‚¹çš„æ•°é‡
 	{
 		/*
-		Çı¶¯Í¨ĞÅĞ­Òé£º
+		é©±åŠ¨é€šä¿¡åè®®ï¼š
 
-			Êä³ö£º
-			ioctlµÄ·µ»ØÖµÎªCPUÖ§³ÖÓ²¼şÖ´ĞĞ¶ÏµãµÄÊıÁ¿
+			è¾“å‡ºï¼š
+			ioctlçš„è¿”å›å€¼ä¸ºCPUæ”¯æŒç¡¬ä»¶æ‰§è¡Œæ–­ç‚¹çš„æ•°é‡
 
 		*/
 		printk_debug(KERN_INFO "IOCTL_GET_NUM_BRPS\n");
@@ -442,13 +446,13 @@ static long hwBreakpointProc_ioctl(
 		return ((read_cpuid(ID_AA64DFR0_EL1) >> 12) & 0xf) + 1;
 		break;
 	}
-	case IOCTL_GET_NUM_WRPS: //»ñÈ¡CPUÖ§³ÖÓ²¼ş·ÃÎÊ¶ÏµãµÄÊıÁ¿
+	case IOCTL_GET_NUM_WRPS: //è·å–CPUæ”¯æŒç¡¬ä»¶è®¿é—®æ–­ç‚¹çš„æ•°é‡
 	{
 		/*
-		Çı¶¯Í¨ĞÅĞ­Òé£º
+		é©±åŠ¨é€šä¿¡åè®®ï¼š
 
-			Êä³ö£º
-			ioctlµÄ·µ»ØÖµÎªCPUÖ§³ÖÓ²¼ş·ÃÎÊ¶ÏµãµÄÊıÁ¿
+			è¾“å‡ºï¼š
+			ioctlçš„è¿”å›å€¼ä¸ºCPUæ”¯æŒç¡¬ä»¶è®¿é—®æ–­ç‚¹çš„æ•°é‡
 
 		*/
 		printk_debug(KERN_INFO "IOCTL_GET_NUM_WRPS\n");
@@ -456,24 +460,24 @@ static long hwBreakpointProc_ioctl(
 		return  ((read_cpuid(ID_AA64DFR0_EL1) >> 20) & 0xf) + 1;
 		break;
 	}
-	case IOCTL_SET_HWBP_HIT_CONDITIONS: //ÉèÖÃÓ²¼ş¶ÏµãÃüÖĞ¼ÇÂ¼Ìõ¼ş
+	case IOCTL_SET_HWBP_HIT_CONDITIONS: //è®¾ç½®ç¡¬ä»¶æ–­ç‚¹å‘½ä¸­è®°å½•æ¡ä»¶
 	{
 		/*
-		Çı¶¯Í¨ĞÅĞ­Òé£º
+		é©±åŠ¨é€šä¿¡åè®®ï¼š
 
-			ÊäÈë£º
+			è¾“å…¥ï¼š
 			struct HIT_CONDITIONS
 
-			Êä³ö£º
+			è¾“å‡ºï¼š
 
 		*/
 
-		//»ñÈ¡Ó²¼ş¶Ïµã¾ä±ú
+		//è·å–ç¡¬ä»¶æ–­ç‚¹å¥æŸ„
 		char buf[sizeof(struct HIT_CONDITIONS)] = { 0 };
 
 		printk_debug(KERN_INFO "IOCTL_SET_HWBP_HIT_CONDITIONS\n");
 
-		//ÓÃ»§¿Õ¼ä->ÄÚºË¿Õ¼ä
+		//ç”¨æˆ·ç©ºé—´->å†…æ ¸ç©ºé—´
 		if (copy_from_user((void*)buf, (void*)arg, sizeof(struct HIT_CONDITIONS))) {
 			return -EFAULT;
 		}
@@ -481,25 +485,25 @@ static long hwBreakpointProc_ioctl(
 		return 0;
 		break;
 	}
-	case IOCTL_ADD_PROCESS_HWBP: //ÉèÖÃ½ø³ÌÓ²¼ş¶Ïµã
+	case IOCTL_ADD_PROCESS_HWBP: //è®¾ç½®è¿›ç¨‹ç¡¬ä»¶æ–­ç‚¹
 	{
 		/*
-		Çı¶¯Í¨ĞÅĞ­Òé£º
+		é©±åŠ¨é€šä¿¡åè®®ï¼š
 
-			ÊäÈë£º
-			0-7×Ö½Ú£º½ø³Ì¾ä±ú
-			8-15×Ö½Ú£º½ø³ÌÄÚ´æµØÖ·
-			16-23×Ö½Ú£ºÓ²¼ş¶Ïµã³¤¶È
-			24-27×Ö½Ú£ºÓ²¼ş¶ÏµãÀàĞÍ
+			è¾“å…¥ï¼š
+			0-7å­—èŠ‚ï¼šè¿›ç¨‹å¥æŸ„
+			8-15å­—èŠ‚ï¼šè¿›ç¨‹å†…å­˜åœ°å€
+			16-23å­—èŠ‚ï¼šç¡¬ä»¶æ–­ç‚¹é•¿åº¦
+			24-27å­—èŠ‚ï¼šç¡¬ä»¶æ–­ç‚¹ç±»å‹
 
-			Êä³ö£º
-			ioctlµÄ·µ»ØÖµÎª0Ôò±íÊ¾ÉèÖÃ½ø³ÌÓ²¼ş¶Ïµã³É¹¦
+			è¾“å‡ºï¼š
+			ioctlçš„è¿”å›å€¼ä¸º0åˆ™è¡¨ç¤ºè®¾ç½®è¿›ç¨‹ç¡¬ä»¶æ–­ç‚¹æˆåŠŸ
 
-			0-7×Ö½Ú£ºÓ²¼ş¶Ïµã¾ä±ú
+			0-7å­—èŠ‚ï¼šç¡¬ä»¶æ–­ç‚¹å¥æŸ„ï¼ˆperf_event *ï¼‰
 		*/
 		printk_debug(KERN_INFO "IOCTL_ADD_PROCESS_BP\n");
 
-		//»ñÈ¡½ø³Ì¾ä±ú
+		//è·å–è¿›ç¨‹å¥æŸ„
 		char buf[28];
 		struct pid * proc_pid_struct = NULL;
 		size_t proc_virt_addr = 0;
@@ -510,25 +514,25 @@ static long hwBreakpointProc_ioctl(
 		struct perf_event * sample_hbp;
 
 		memset(&buf, 0, sizeof(buf));
-		//ÓÃ»§¿Õ¼ä->ÄÚºË¿Õ¼ä
+		//ç”¨æˆ·ç©ºé—´->å†…æ ¸ç©ºé—´
 		if (copy_from_user((void*)buf, (void*)arg, 28)) {
 			return -EFAULT;
 		}
-		//»ñÈ¡½ø³Ì¾ä±ú
+		//è·å–è¿›ç¨‹å¥æŸ„
 		memcpy(&proc_pid_struct, buf, sizeof(proc_pid_struct));
 		printk_debug(KERN_INFO "proc_pid_struct *:%p\n", proc_pid_struct);
 
-		//»ñÈ¡½ø³ÌĞéÄâµØÖ·
+		//è·å–è¿›ç¨‹è™šæ‹Ÿåœ°å€
 		memcpy(&proc_virt_addr, (void*)((size_t)buf + (size_t)8), sizeof(proc_virt_addr));
 		printk_debug(KERN_INFO "proc_virt_addr :%p\n", proc_virt_addr);
 
 
-		//»ñÈ¡Ó²¼ş¶Ïµã³¤¶È
+		//è·å–ç¡¬ä»¶æ–­ç‚¹é•¿åº¦
 		memcpy(&hwBreakpoint_len, (void*)((size_t)buf + (size_t)16), sizeof(hwBreakpoint_len));
 		printk_debug(KERN_INFO "hwBreakpoint_len:%zu\n", hwBreakpoint_len);
 
 
-		//»ñÈ¡Ó²¼ş¶ÏµãÀàĞÍ
+		//è·å–ç¡¬ä»¶æ–­ç‚¹ç±»å‹
 		memcpy(&hwBreakpoint_type, (void*)((size_t)buf + (size_t)24), sizeof(hwBreakpoint_type));
 		printk_debug(KERN_INFO "hwBreakpoint_type:%d\n", hwBreakpoint_type);
 
@@ -543,7 +547,7 @@ static long hwBreakpointProc_ioctl(
 
 		// ptrace_breakpoint_init(&attr);
 		hw_breakpoint_init(&attr);
-		attr.exclude_kernel = 1;
+		attr.exclude_kernel = 1; //å†…æ ¸æ€æ—¶ä¸è®¡æ•°
 
 
 		/*
@@ -554,8 +558,8 @@ static long hwBreakpointProc_ioctl(
 		attr.bp_addr = proc_virt_addr;
 		attr.bp_len = hwBreakpoint_len;
 		attr.bp_type = hwBreakpoint_type;
-		attr.disabled = 0;
-		sample_hbp = register_user_hw_breakpoint(&attr, sample_hbp_handler, NULL, task);
+		attr.disabled = 0;// åˆ›å»ºåç«‹å³å¼€å§‹è®¡æ•°ï¼Œä¸ç”¨æ˜¾å¼å¼€å¯è®¡æ•°
+		sample_hbp = register_user_hw_breakpoint(&attr, sample_hbp_handler, NULL, task); //sample_hbp_handleræ˜¯æ–­ç‚¹å›è°ƒå‡½æ•°
 		put_task_struct(task);
 
 		if (IS_ERR((void __force *)sample_hbp)) {
@@ -567,10 +571,10 @@ static long hwBreakpointProc_ioctl(
 		cvector_pushback(g_vHwBpHandle, &sample_hbp);
 
 
-		//Êä³öÓ²¼ş¶Ïµã¾ä±ú
+		//è¾“å‡ºç¡¬ä»¶æ–­ç‚¹å¥æŸ„
 		memset(&buf, 0, sizeof(buf));
 		memcpy(&buf, &sample_hbp, sizeof(sample_hbp));
-		//ÄÚºË¿Õ¼ä->ÓÃ»§¿Õ¼ä½»»»Êı¾İ
+		//å†…æ ¸ç©ºé—´->ç”¨æˆ·ç©ºé—´äº¤æ¢æ•°æ®
 		if (copy_to_user((void*)arg, &buf, 8)) {
 			return -EINVAL;
 		}
@@ -578,19 +582,19 @@ static long hwBreakpointProc_ioctl(
 
 		break;
 	}
-	case IOCTL_DEL_PROCESS_HWBP: //É¾³ı½ø³ÌÓ²¼ş¶Ïµã
+	case IOCTL_DEL_PROCESS_HWBP: //åˆ é™¤è¿›ç¨‹ç¡¬ä»¶æ–­ç‚¹
 	{
 		/*
-		Çı¶¯Í¨ĞÅĞ­Òé£º
+		é©±åŠ¨é€šä¿¡åè®®ï¼š
 
-			ÊäÈë£º
-			0-7×Ö½Ú£ºÓ²¼ş¶Ïµã¾ä±ú
+			è¾“å…¥ï¼š
+			0-7å­—èŠ‚ï¼šç¡¬ä»¶æ–­ç‚¹å¥æŸ„ï¼ˆperf_event *ï¼‰
 
-			Êä³ö£º
-			ioctlµÄ·µ»ØÖµÎª0Ôò±íÊ¾É¾³ı½ø³ÌÓ²¼ş¶Ïµã
+			è¾“å‡ºï¼š
+			ioctlçš„è¿”å›å€¼ä¸º0åˆ™è¡¨ç¤ºåˆ é™¤è¿›ç¨‹ç¡¬ä»¶æ–­ç‚¹
 		*/
 
-		//»ñÈ¡Ó²¼ş¶Ïµã¾ä±ú
+		//è·å–ç¡¬ä»¶æ–­ç‚¹å¥æŸ„
 		char buf[8];
 		struct perf_event * sample_hbp = NULL;
 		citerator iter;
@@ -598,15 +602,15 @@ static long hwBreakpointProc_ioctl(
 		printk_debug(KERN_INFO "IOCTL_DEL_PROCESS_HWBP\n");
 
 		memset(&buf, 0, sizeof(buf));
-		//ÓÃ»§¿Õ¼ä->ÄÚºË¿Õ¼ä
+		//ç”¨æˆ·ç©ºé—´->å†…æ ¸ç©ºé—´
 		if (copy_from_user((void*)buf, (void*)arg, 8)) {
 			return -EFAULT;
 		}
-		//»ñÈ¡Ó²¼ş¶Ïµã¾ä±ú
+		//è·å–ç¡¬ä»¶æ–­ç‚¹å¥æŸ„
 		memcpy(&sample_hbp, buf, sizeof(sample_hbp));
 		printk_debug(KERN_INFO "sample_hbp *:%p\n", sample_hbp);
 
-		//É¾³ıÓ²¼ş¶Ïµã
+		//åˆ é™¤ç¡¬ä»¶æ–­ç‚¹
 		unregister_hw_breakpoint(sample_hbp);
 
 		for (iter = cvector_begin(g_vHwBpHandle); iter != cvector_end(g_vHwBpHandle); iter = cvector_next(g_vHwBpHandle, iter)) {
@@ -619,19 +623,19 @@ static long hwBreakpointProc_ioctl(
 		return 0;
 		break;
 	}
-	case IOCTL_GET_HWBP_HIT_ADDR_COUNT: //»ñÈ¡Ó²¼ş¶ÏµãÃüÖĞµØÖ·ÊıÁ¿
+	case IOCTL_GET_HWBP_HIT_ADDR_COUNT: //è·å–ç¡¬ä»¶æ–­ç‚¹å‘½ä¸­åœ°å€æ•°é‡
 	{
 		/*
-		Çı¶¯Í¨ĞÅĞ­Òé£º
+		é©±åŠ¨é€šä¿¡åè®®ï¼š
 
-			ÊäÈë£º
-			0-7×Ö½Ú£ºÓ²¼ş¶Ïµã¾ä±ú
+			è¾“å…¥ï¼š
+			0-7å­—èŠ‚ï¼šç¡¬ä»¶æ–­ç‚¹å¥æŸ„ï¼ˆperf_event *ï¼‰
 
-			Êä³ö£º
-			ioctlµÄ·µ»ØÖµÎªÓ²¼ş¶ÏµãÃüÖĞµØÖ·ÊıÁ¿
+			è¾“å‡ºï¼š
+			ioctlçš„è¿”å›å€¼ä¸ºç¡¬ä»¶æ–­ç‚¹å‘½ä¸­åœ°å€æ•°é‡
 		*/
 
-		//»ñÈ¡Ó²¼ş¶Ïµã¾ä±ú
+		//è·å–ç¡¬ä»¶æ–­ç‚¹å¥æŸ„
 		char buf[8];
 		struct perf_event * sample_hbp = NULL;
 		size_t count = 0;
@@ -640,11 +644,11 @@ static long hwBreakpointProc_ioctl(
 		printk_debug(KERN_INFO "IOCTL_GET_HWBP_HIT_ADDR_COUNT\n");
 
 		memset(&buf, 0, sizeof(buf));
-		//ÓÃ»§¿Õ¼ä->ÄÚºË¿Õ¼ä
+		//ç”¨æˆ·ç©ºé—´->å†…æ ¸ç©ºé—´
 		if (copy_from_user((void*)buf, (void*)arg, 8)) {
 			return -EFAULT;
 		}
-		//»ñÈ¡Ó²¼ş¶Ïµã¾ä±ú
+		//è·å–ç¡¬ä»¶æ–­ç‚¹å¥æŸ„
 		memcpy(&sample_hbp, buf, sizeof(sample_hbp));
 		printk_debug(KERN_INFO "sample_hbp *:%p\n", sample_hbp);
 
@@ -676,17 +680,17 @@ static int hwBreakpointProc_release(struct inode *inode, struct file *filp) {
 static const struct file_operations hwBreakpointProc_fops =
 {
   .owner = THIS_MODULE,
-  .open = hwBreakpointProc_open, //´ò¿ªÉè±¸º¯Êı
-  .release = hwBreakpointProc_release, //ÊÍ·ÅÉè±¸º¯Êı
-  .read = hwBreakpointProc_read, //¶ÁÉè±¸º¯Êı
-  .write = hwBreakpointProc_write, //Ğ´Éè±¸º¯Êı
-  .llseek = hwBreakpointProc_llseek, //¶¨Î»Æ«ÒÆÁ¿º¯Êı
+  .open = hwBreakpointProc_open, //æ‰“å¼€è®¾å¤‡å‡½æ•°
+  .release = hwBreakpointProc_release, //é‡Šæ”¾è®¾å¤‡å‡½æ•°
+  .read = hwBreakpointProc_read, //è¯»è®¾å¤‡å‡½æ•°
+  .write = hwBreakpointProc_write, //å†™è®¾å¤‡å‡½æ•°
+  .llseek = hwBreakpointProc_llseek, //å®šä½åç§»é‡å‡½æ•°
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 36)
-	.ioctl = hwBreakpointProc_ioctl, //¿ØÖÆº¯Êı
+	.ioctl = hwBreakpointProc_ioctl, //æ§åˆ¶å‡½æ•°
 #else
-	.compat_ioctl = hwBreakpointProc_ioctl, //64Î»Çı¶¯±ØĞëÊµÏÖÕâ¸ö½Ó¿Ú£¬32Î»³ÌĞò²ÅÄÜµ÷ÓÃÇı¶¯
-	.unlocked_ioctl = hwBreakpointProc_ioctl, //¿ØÖÆº¯Êı
+	.compat_ioctl = hwBreakpointProc_ioctl, //64ä½é©±åŠ¨å¿…é¡»å®ç°è¿™ä¸ªæ¥å£ï¼Œ32ä½ç¨‹åºæ‰èƒ½è°ƒç”¨é©±åŠ¨
+	.unlocked_ioctl = hwBreakpointProc_ioctl, //æ§åˆ¶å‡½æ•°
 #endif
 };
 
@@ -694,7 +698,7 @@ static int __init hwBreakpointProc_dev_init(void) {
 	int result;
 	int err;
 
-	//¶¯Ì¬ÉêÇëÉè±¸ºÅ
+	//åŠ¨æ€ç”³è¯·è®¾å¤‡å·
 	result = alloc_chrdev_region(&g_hwBreakpointProc_devno, 0, 1, DEV_FILENAME);
 	g_hwBreakpointProc_major = MAJOR(g_hwBreakpointProc_devno);
 
@@ -704,20 +708,20 @@ static int __init hwBreakpointProc_dev_init(void) {
 		return result;
 	}
 
-	// 2.¶¯Ì¬ÉêÇëÉè±¸½á¹¹ÌåµÄÄÚ´æ
+	// 2.åŠ¨æ€ç”³è¯·è®¾å¤‡ç»“æ„ä½“çš„å†…å­˜
 	g_hwBreakpointProc_devp = kmalloc(sizeof(struct hwBreakpointProcDev), GFP_KERNEL);
 	if (!g_hwBreakpointProc_devp) {
-		//ÉêÇëÊ§°Ü
+		//ç”³è¯·å¤±è´¥
 		result = -ENOMEM;
 		goto _fail;
 	}
 	memset(g_hwBreakpointProc_devp, 0, sizeof(struct hwBreakpointProcDev));
 
-	//3.³õÊ¼»¯²¢ÇÒÌí¼Ócdev½á¹¹Ìå
-	cdev_init(&g_hwBreakpointProc_devp->cdev, &hwBreakpointProc_fops); //³õÊ¼»¯cdevÉè±¸
-	g_hwBreakpointProc_devp->cdev.owner = THIS_MODULE; //Ê¹Çı¶¯³ÌĞòÊôÓÚ¸ÃÄ£¿é
-	g_hwBreakpointProc_devp->cdev.ops = &hwBreakpointProc_fops; //cdevÁ¬½Ófile_operationsÖ¸Õë
-	//½«cdev×¢²áµ½ÏµÍ³ÖĞ
+	//3.åˆå§‹åŒ–å¹¶ä¸”æ·»åŠ cdevç»“æ„ä½“
+	cdev_init(&g_hwBreakpointProc_devp->cdev, &hwBreakpointProc_fops); //åˆå§‹åŒ–cdevè®¾å¤‡
+	g_hwBreakpointProc_devp->cdev.owner = THIS_MODULE; //ä½¿é©±åŠ¨ç¨‹åºå±äºè¯¥æ¨¡å—
+	g_hwBreakpointProc_devp->cdev.ops = &hwBreakpointProc_fops; //cdevè¿æ¥file_operationsæŒ‡é’ˆ
+	//å°†cdevæ³¨å†Œåˆ°ç³»ç»Ÿä¸­
 	err = cdev_add(&g_hwBreakpointProc_devp->cdev, g_hwBreakpointProc_devno, 1);
 	if (err) {
 		printk(KERN_NOTICE "Error in cdev_add()\n");
@@ -725,16 +729,16 @@ static int __init hwBreakpointProc_dev_init(void) {
 		goto _fail;
 	}
 
-	//³õÊ¼»¯ĞÅºÅÁ¿
+	//åˆå§‹åŒ–ä¿¡å·é‡
 	sema_init(&g_lockHwBpInfoSem, 1);
 
 
-	//4.´´½¨Éè±¸ÎÄ¼ş£¨Î»ÖÃÔÚ/dev/xxxxx£©
-	g_Class_devp = class_create(THIS_MODULE, DEV_FILENAME); //´´½¨Éè±¸Àà
-	device_create(g_Class_devp, NULL, g_hwBreakpointProc_devno, NULL, "%s", DEV_FILENAME); //´´½¨Éè±¸ÎÄ¼ş
+	//4.åˆ›å»ºè®¾å¤‡æ–‡ä»¶ï¼ˆä½ç½®åœ¨/dev/xxxxxï¼‰
+	g_Class_devp = class_create(THIS_MODULE, DEV_FILENAME); //åˆ›å»ºè®¾å¤‡ç±»
+	device_create(g_Class_devp, NULL, g_hwBreakpointProc_devno, NULL, "%s", DEV_FILENAME); //åˆ›å»ºè®¾å¤‡æ–‡ä»¶
 
 
-	//´´½¨È«¾Ö´¢´æÓ²¼ş¶Ïµã¾ä±úµÄÊı×é
+	//åˆ›å»ºå…¨å±€å‚¨å­˜ç¡¬ä»¶æ–­ç‚¹å¥æŸ„çš„æ•°ç»„
 	g_vHwBpHandle = cvector_create(sizeof(struct perf_event *));
 	g_vHwBpInfo = cvector_create(sizeof(struct HW_BREAKPOINT_INFO));
 
@@ -758,7 +762,7 @@ _fail:
 }
 
 static void __exit hwBreakpointProc_dev_exit(void) {
-	//É¾³ıÊ£ÓàµÄÓ²¼ş¶Ïµã
+	//åˆ é™¤å‰©ä½™çš„ç¡¬ä»¶æ–­ç‚¹
 	citerator iter;
 	for (iter = cvector_begin(g_vHwBpHandle); iter != cvector_end(g_vHwBpHandle); iter = cvector_next(g_vHwBpHandle, iter)) {
 		struct perf_event * sample_hbp = (struct perf_event *)*((size_t*)iter);
@@ -773,12 +777,12 @@ static void __exit hwBreakpointProc_dev_exit(void) {
 	cvector_destroy(g_vHwBpInfo);
 
 
-	device_destroy(g_Class_devp, g_hwBreakpointProc_devno); //É¾³ıÉè±¸ÎÄ¼ş£¨Î»ÖÃÔÚ/dev/xxxxx£©
-	class_destroy(g_Class_devp); //É¾³ıÉè±¸Àà
+	device_destroy(g_Class_devp, g_hwBreakpointProc_devno); //åˆ é™¤è®¾å¤‡æ–‡ä»¶ï¼ˆä½ç½®åœ¨/dev/xxxxxï¼‰
+	class_destroy(g_Class_devp); //åˆ é™¤è®¾å¤‡ç±»
 
-	cdev_del(&g_hwBreakpointProc_devp->cdev); //×¢Ïúcdev
-	kfree(g_hwBreakpointProc_devp); // ÊÍ·ÅÉè±¸½á¹¹ÌåÄÚ´æ
-	unregister_chrdev_region(g_hwBreakpointProc_devno, 1); //ÊÍ·ÅÉè±¸ºÅ
+	cdev_del(&g_hwBreakpointProc_devp->cdev); //æ³¨é”€cdev
+	kfree(g_hwBreakpointProc_devp); // é‡Šæ”¾è®¾å¤‡ç»“æ„ä½“å†…å­˜
+	unregister_chrdev_region(g_hwBreakpointProc_devno, 1); //é‡Šæ”¾è®¾å¤‡å·
 
 
 	printk(KERN_EMERG "Goodbye, %s\n", DEV_FILENAME);
