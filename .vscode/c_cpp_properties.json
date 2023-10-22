@@ -1,6 +1,6 @@
 {
     "configurations": [
-        {
+        {   
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
@@ -15,7 +15,9 @@
             ],
             "defines": [
             "__GNUC__",
-            "__KERNEL__"]
+            "__KERNEL__",
+            "CONFIG_PGTABLE_LEVELS=2",
+            "CONFIG_ARM64_VA_BITS=39"]
         }
     ],
     "version": 4
