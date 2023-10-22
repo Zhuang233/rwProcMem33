@@ -17,7 +17,8 @@
             "__GNUC__",
             "__KERNEL__",
             "CONFIG_PGTABLE_LEVELS=2",
-            "CONFIG_ARM64_VA_BITS=39"]
+            "CONFIG_ARM64_VA_BITS=39",
+            "CONFIG_HAVE_HW_BREAKPOINT"]
         }
     ],
     "version": 4

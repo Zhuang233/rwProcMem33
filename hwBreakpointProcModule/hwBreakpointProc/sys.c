@@ -541,8 +541,9 @@ static long hwBreakpointProc_ioctl(
 			return -EINVAL;
 		}
 
-		//hw_breakpoint_init(&attr);
-		ptrace_breakpoint_init(&attr);
+		// ptrace_breakpoint_init(&attr);
+		hw_breakpoint_init(&attr);
+		attr.exclude_kernel = 1;
 
 
 		/*
