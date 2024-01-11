@@ -173,8 +173,8 @@ MY_STATIC inline size_t get_task_proc_phy_addr(struct task_struct* task, size_t 
 		printk_debug("pgd is null\n");
 		goto out;
 	}
-	printk_debug("pgd_val = 0x%lx pgd addr:0x%lx\n", (unsigned long int)pgd_val(*pgd), (unsigned long int)pgd_val(pgd));
-	printk_debug("init_mm pgd val:0x%lx,pgd addr:0x%lx\n", (unsigned long)pgd_val(*(mm->pgd)), pgd_val((mm->pgd)));
+	printk_debug("pgd_val = 0x%lx pgd addr:0x%lx\n", (unsigned long int)pgd_val(*pgd), 111);
+	printk_debug("init_mm pgd val:0x%lx,pgd addr:0x%lx\n", (unsigned long)pgd_val(*(mm->pgd)), 111);
 	printk_debug("pgd_index = %d\n", pgd_index(virt_addr));
 	if (pgd_none(*pgd)) {
 		printk_debug("not mapped in pgd\n");
@@ -195,7 +195,7 @@ MY_STATIC inline size_t get_task_proc_phy_addr(struct task_struct* task, size_t 
 	// 	goto out;
 	// }
 
-	pud = pud_offset(pgd, virt_addr);
+	pud = pud_offset((p4d_t *)pgd, virt_addr);
 	printk_debug("pud_val = 0x%llx \n", pud_val(*pud));
 	if (pud_none(*pud)) {
 		printk_debug("not mapped in pud\n");
@@ -348,8 +348,8 @@ MY_STATIC inline size_t read_ram_physical_addr(size_t phy_addr, char* lpBuf, boo
 			printk_debug(KERN_INFO "Error in x_xlate_dev_mem_ptr:0x%llx\n", phy_addr);
 			break;
 		}
-		probe = probe_kernel_read(bounce, ptr, sz);
-		// unxlate_dev_mem_ptr(phy_addr, ptr);
+		probe = x_probe_kernel_read(bounce, ptr, sz);
+		unxlate_dev_mem_ptr(phy_addr, ptr);
 		if (probe) {
 			break;
 		}
@@ -398,13 +398,13 @@ MY_STATIC inline size_t write_ram_physical_addr(size_t phy_addr, char* lpBuf, bo
 		} else {
 			unsigned long copied = x_copy_from_user(ptr, lpBuf, sz);
 			if (copied) {
-				// unxlate_dev_mem_ptr(phy_addr, ptr);
+				unxlate_dev_mem_ptr(phy_addr, ptr);
 				realWrite += sz - copied;
 				printk_debug(KERN_INFO "Error in x_copy_from_user\n");
 				break;
 			}
 		}
-		// unxlate_dev_mem_ptr(phy_addr, ptr);
+		unxlate_dev_mem_ptr(phy_addr, ptr);
 
 		lpBuf += sz;
 		phy_addr += sz;
