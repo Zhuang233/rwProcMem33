@@ -4,6 +4,7 @@
 #include "linux_kernel_api/linux_kernel_api_4_19_81.h"
 #include "linux_kernel_api/linux_kernel_api_5_4_61.h"
 #include "linux_kernel_api/linux_kernel_api_5_10_43.h"
+#include "linux_kernel_api/linux_kernel_api_5_10_66.h"
 #include "linux_kernel_api/linux_kernel_api_5_15_41.h"
 #include <linux/ctype.h>
 #include <asm/uaccess.h>
@@ -33,16 +34,16 @@ MY_STATIC inline int x_atoi(const char arr[]) {
 
 MY_STATIC inline unsigned long x_copy_from_user(void *to, const void __user *from, unsigned long n) {
 #ifdef CONFIG_DIRECT_API_USER_COPY
-	unsigned long __copy_from_user(void* to, const void __user * from, unsigned long n);
-	return __copy_from_user(to, from, n);
+	unsigned long __arch_copy_from_user(void* to, const void __user * from, unsigned long n);
+	return __arch_copy_from_user(to, from, n);
 #else
 	return copy_from_user(to, from, n);
 #endif
 }
 MY_STATIC inline unsigned long x_copy_to_user(void __user *to, const void *from, unsigned long n) {
 #ifdef CONFIG_DIRECT_API_USER_COPY
-	unsigned long __copy_to_user(void __user * to, const void* from, unsigned long n);
-	return __copy_to_user(to, from, n);
+	unsigned long __arch_copy_to_user(void __user * to, const void* from, unsigned long n);
+	return __arch_copy_to_user(to, from, n);
 #else
 	return copy_to_user(to, from, n);
 #endif

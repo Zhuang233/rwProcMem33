@@ -4,18 +4,19 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/home/zbw/Desktop/android_kernel_oneplus_msm8996/include",
-                "/home/zbw/Desktop/android_kernel_oneplus_msm8996/out/include",
+                "/home/zbw/Desktop/google_kernel/out/android12-5.10/common/include",
+                "/home/zbw/Desktop/google_kernel/common/include",
 
-                "/home/zbw/Desktop/android_kernel_oneplus_msm8996/out/arch/arm64/include/generated",
-                "/home/zbw/Desktop/android_kernel_oneplus_msm8996/arch/arm64/include",
+                "/home/zbw/Desktop/google_kernel/out/android12-5.10/common/arch/arm64/include/generated",
+                "/home/zbw/Desktop/google_kernel/common/arch/arm64/include",
                 
-                "/home/zbw/Desktop/android_kernel_oneplus_msm8996/include/uapi"
+                "/home/zbw/Desktop/google_kernel/common/include/uapi"
 
             ],
             "defines": [
             "__GNUC__",
             "__KERNEL__",
+            // Todo:修改配置
             "CONFIG_PGTABLE_LEVELS=2",
             "CONFIG_ARM64_VA_BITS=39",
             "CONFIG_HAVE_HW_BREAKPOINT"]
