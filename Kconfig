@@ -1,0 +1,1 @@
+source "drivers/rwProcMem33/hwBreakpointProcModule/hwBreakpointProc/Kconfig"
